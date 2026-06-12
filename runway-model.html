@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Runway Model — Burn Rate & Runway Calculator</title>
+<meta name="description" content="Enter your monthly financials and get exact burn rate, runway in months, break-even timeline, and a 3-scenario projection. Deterministic math, BYOK AI board narrative. No backend.">
+<meta name="theme-color" content="#111217">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111217'/%3E%3Cpath d='M6 24l6-8 5 4 5-10 4 6' fill='none' stroke='%230E32E8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Khand:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#090A0F;--ink2:#3A3D46;--ink3:#6B7280;--ink4:#9AA0AB;
+  --soft-black:#111217;--paper:#F4F4F6;--paper2:#E8E8EA;--white:#FFFFFF;
+  --line:#C9CBD2;--line2:#B0B3BC;
+  --blue:#0E32E8;--indigo:#043EDB;--blue-bg:#EEF1FE;--blue-line:#AFC0FA;
+  --glow-faint:rgba(14,50,232,0.08);
+  --red:#DC2626;--red-bg:#FCEAEA;--red-line:#F0B4B4;
+  --amber:#B45309;--amber-bg:#FEF3C7;--amber-line:#E8C98A;
+  --green:#16A34A;--green-bg:#E7F6EC;--green-line:#9BD9AE;
+  --violet:#5A1A8A;--violet-bg:#F5F0FC;--violet-line:#C8A0E0;
+  --r:6px;--r2:10px;--r4:18px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Manrope',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+.sidebar{background:var(--white);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{min-width:0;padding:36px 44px 80px}
+
+/* SIDEBAR */
+.sb-top{padding:22px 20px 16px;border-bottom:1px solid var(--line)}
+.wordmark{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.wm-mark{width:30px;height:30px;background:var(--soft-black);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wm-mark svg{width:16px;height:16px}
+.wm-name{font-family:'Khand',sans-serif;font-weight:600;font-size:20px;color:var(--ink)}
+.wm-sub{font-size:11px;color:var(--ink3);margin-left:40px}
+.sb-sec{padding:14px 20px;border-bottom:1px solid var(--line)}
+.sb-sec:last-child{border-bottom:none}
+.sb-lbl{font-size:10px;font-weight:600;color:var(--ink4);letter-spacing:.12em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+/* Input fields */
+.inp-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.inp-lbl{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace}
+.inp-wrap{display:flex;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:border-color .12s}
+.inp-wrap:focus-within{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px var(--glow-faint)}
+.inp-pre{padding:0 8px;font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace;border-right:1px solid var(--line);line-height:32px;flex-shrink:0;background:var(--paper2)}
+.inp-wrap input{flex:1;padding:7px 9px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink);background:transparent;border:none;outline:none;min-width:0}
+.inp-wrap input::placeholder{color:var(--ink4)}
+.inp-suf{padding:0 8px;font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.currency-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:12px}
+.ctab{padding:5px;border:1px solid var(--line);border-radius:var(--r);font-size:11px;font-weight:600;color:var(--ink3);background:transparent;cursor:pointer;text-align:center;transition:all .12s;font-family:'JetBrains Mono',monospace}
+.ctab:hover{background:var(--paper);border-color:var(--line2)}
+.ctab.on{background:var(--soft-black);color:#fff;border-color:var(--soft-black)}
+/* BYOK */
+.ptabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:10px}
+.ptab{padding:6px;border:1px solid var(--line);border-radius:var(--r);font-size:11px;font-weight:600;color:var(--ink3);background:transparent;cursor:pointer;text-align:center;transition:all .12s;font-family:'Manrope',sans-serif}
+.ptab:hover{background:var(--paper);border-color:var(--line2)}
+.ptab.on{background:var(--soft-black);color:#fff;border-color:var(--soft-black)}
+.ppanel{display:none}.ppanel.on{display:block}
+.fl{margin-bottom:8px}
+.fl-lbl{font-size:10px;color:var(--ink3);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.fl input{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:7px 9px;font-family:'Manrope',sans-serif;font-size:12px;color:var(--ink);outline:none;transition:border-color .12s}
+.fl input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px var(--glow-faint)}
+.fl input::placeholder{color:var(--ink4)}
+.mlist{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.mopt{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer;transition:all .12s}
+.mopt:hover{background:var(--paper)}
+.mopt.on{border-color:var(--blue);background:var(--glow-faint)}
+.mradio{width:12px;height:12px;border:1.5px solid var(--line2);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.mopt.on .mradio{border-color:var(--blue)}
+.mradio::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--blue);display:none}
+.mopt.on .mradio::after{display:block}
+.mname{font-size:11px;font-weight:500;color:var(--ink);flex:1}
+.mtag{font-size:10px;color:var(--ink3);font-family:'JetBrains Mono',monospace}
+.key-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink3);padding:6px 8px;background:var(--paper);border-radius:var(--r);border:1px solid var(--line);margin-top:8px}
+.kdot{width:6px;height:6px;border-radius:50%;background:var(--ink4);flex-shrink:0}
+.kdot.ok{background:var(--green)}
+
+/* MAIN */
+.ph{margin-bottom:28px}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-family:'Manrope',sans-serif;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.pt{font-family:'Khand',sans-serif;font-weight:600;font-size:40px;letter-spacing:-.015em;line-height:1.04;margin-bottom:6px}
+.pt em{font-style:normal;color:var(--blue)}
+.ps{font-size:13px;color:var(--ink3);line-height:1.6;max-width:560px}
+
+/* KPI strip */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r4);padding:18px 20px}
+.kpi-lbl{font-size:10px;color:var(--ink3);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.kpi-val{font-family:'Khand',sans-serif;font-weight:600;font-size:32px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:4px;font-family:'JetBrains Mono',monospace}
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}.c-blue{color:var(--blue)}.c-ink{color:var(--ink)}
+
+/* Runway bar */
+.runway-bar-wrap{background:var(--white);border:1px solid var(--line);border-radius:var(--r4);padding:20px 24px;margin-bottom:16px}
+.rb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rb-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2)}
+.rb-expires{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink3)}
+.rb-track{height:10px;background:var(--paper2);border-radius:999px;overflow:hidden;margin-bottom:8px}
+.rb-fill{height:100%;border-radius:999px;transition:width .4s ease}
+.rb-labels{display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--ink4)}
+.rb-markers{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.rb-marker{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3)}
+.rb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Scenario cards */
+.scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.scenario-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r4);padding:18px}
+.sc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+.sc-label.base{color:var(--blue)}
+.sc-label.opt{color:var(--green)}
+.sc-label.cons{color:var(--amber)}
+.sc-runway{font-family:'Khand',sans-serif;font-weight:600;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;margin-bottom:4px}
+.sc-desc{font-size:11px;color:var(--ink3);line-height:1.5}
+.sc-detail{margin-top:8px;font-size:11px;color:var(--ink2);font-family:'JetBrains Mono',monospace;line-height:1.7}
+
+/* Projection table */
+.proj-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r4);overflow:hidden;margin-bottom:16px}
+.proj-head{padding:13px 20px;border-bottom:1px solid var(--line);background:var(--paper);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);display:flex;align-items:center;justify-content:space-between}
+.proj-scroll{overflow-x:auto}
+table.proj-tbl{width:100%;border-collapse:collapse}
+.proj-tbl th{font:600 10px/1 'Manrope',sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);padding:9px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.proj-tbl th:first-child{text-align:left}
+.proj-tbl td{padding:9px 14px;border-bottom:1px solid var(--paper2);font-size:12px;text-align:right;vertical-align:middle;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.proj-tbl td:first-child{text-align:left;font-family:'Manrope',sans-serif;font-size:12.5px;font-variant-numeric:normal}
+.proj-tbl tr:last-child td{border-bottom:none}
+.proj-tbl tr.be-row{background:var(--green-bg)}
+.proj-tbl tr.zero-row{background:var(--red-bg)}
+.proj-tbl tr.current-row{background:var(--blue-bg)}
+td.val-pos{color:var(--green)}
+td.val-neg{color:var(--red)}
+td.val-warn{color:var(--amber)}
+
+/* AI */
+.ai-section{background:var(--white);border:1px solid var(--line);border-radius:var(--r4);overflow:hidden;margin-bottom:16px}
+.ai-head{padding:12px 20px;border-bottom:1px solid var(--line);background:var(--paper);display:flex;align-items:center;gap:8px}
+.ai-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2)}
+.ai-byok{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--blue);background:var(--blue-bg);padding:2px 7px;border-radius:20px;border:1px solid var(--blue-line)}
+.ai-body{padding:18px 20px}
+.ai-no-key{font-size:12.5px;color:var(--ink3);line-height:1.6}
+.ai-result{font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;display:none}
+.ai-result.visible{display:block}
+.ai-meta{font-size:10px;color:var(--ink4);font-family:'JetBrains Mono',monospace;margin-top:12px;padding-top:12px;border-top:1px solid var(--paper);display:none}
+.run-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--soft-black);color:#fff;border:none;border-radius:999px;font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s}
+.run-btn:hover{background:#000}.run-btn:active{transform:scale(.98)}
+.run-btn:disabled{opacity:.35;cursor:not-allowed}
+.run-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.run-btn.blue{background:var(--blue)}.run-btn.blue:hover{background:var(--indigo)}
+
+/* Toast */
+.toast-stack{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:999}
+.toast{display:flex;align-items:center;gap:10px;background:var(--soft-black);color:white;padding:11px 14px;border-radius:12px;font-size:13px;font-family:'Manrope',sans-serif;box-shadow:0 8px 32px rgba(9,10,15,.25);animation:ti .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes ti{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.toast-ok{border-left:3px solid var(--green)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+@media(max-width:960px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto}.main{padding:22px 18px 60px}.kpi-strip{grid-template-columns:1fr 1fr}.scenarios{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="wordmark">
+      <div class="wm-mark">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M6 24l6-8 5 4 5-10 4 6" stroke="#0E32E8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="14" r="2" fill="#9BD9AE"/>
+        </svg>
+      </div>
+      <span class="wm-name">Runway Model</span>
+    </div>
+    <div class="wm-sub">Burn rate & runway calculator</div>
+  </div>
+
+  <!-- Currency -->
+  <div class="sb-sec">
+    <div class="sb-lbl">Currency</div>
+    <div class="currency-tabs">
+      <button class="ctab on" onclick="setCurrency('₹','INR',this)">₹ INR</button>
+      <button class="ctab" onclick="setCurrency('$','USD',this)">$ USD</button>
+      <button class="ctab" onclick="setCurrency('€','EUR',this)">€ EUR</button>
+    </div>
+
+    <div class="sb-lbl" style="margin-top:4px">Financials</div>
+    <div class="inp-row">
+      <div class="inp-lbl">Cash balance</div>
+      <div class="inp-wrap"><span class="inp-pre" id="sym">₹</span><input id="cash" type="number" placeholder="5000000" oninput="compute()" min="0"></div>
+    </div>
+    <div class="inp-row">
+      <div class="inp-lbl">Monthly revenue</div>
+      <div class="inp-wrap"><span class="inp-pre" id="sym2">₹</span><input id="revenue" type="number" placeholder="800000" oninput="compute()" min="0"></div>
+    </div>
+    <div class="inp-row">
+      <div class="inp-lbl">Monthly expenses</div>
+      <div class="inp-wrap"><span class="inp-pre" id="sym3">₹</span><input id="expenses" type="number" placeholder="1200000" oninput="compute()" min="0"></div>
+    </div>
+    <div class="inp-row">
+      <div class="inp-lbl">MoM revenue growth</div>
+      <div class="inp-wrap"><input id="growth" type="number" placeholder="8" step="0.5" oninput="compute()" style="padding-left:9px"><span class="inp-suf">%/mo</span></div>
+    </div>
+  </div>
+
+  <!-- BYOK -->
+  <div class="sb-sec">
+    <div class="sb-lbl">AI Narrative (BYOK)</div>
+    <div class="ptabs">
+      <button class="ptab on" onclick="switchP('anthropic',this)">Anthropic</button>
+      <button class="ptab" onclick="switchP('openai',this)">OpenAI</button>
+      <button class="ptab" onclick="switchP('gemini',this)">Gemini</button>
+      <button class="ptab" onclick="switchP('groq',this)">Groq</button>
+    </div>
+    <div class="ppanel on" id="pp-anthropic">
+      <div class="fl"><div class="fl-lbl">API KEY</div><input type="password" id="k-anthropic" placeholder="sk-ant-api03-…" oninput="checkKey()"></div>
+      <div class="mlist">
+        <div class="mopt on" onclick="selModel(this,'claude-sonnet-4-6')"><div class="mradio"></div><span class="mname">Claude Sonnet 4.6</span><span class="mtag">recommended</span></div>
+        <div class="mopt" onclick="selModel(this,'claude-opus-4-8')"><div class="mradio"></div><span class="mname">Claude Opus 4.8</span><span class="mtag">best</span></div>
+      </div>
+    </div>
+    <div class="ppanel" id="pp-openai"><div class="fl"><div class="fl-lbl">API KEY</div><input type="password" id="k-openai" placeholder="sk-…" oninput="checkKey()"></div><div class="mlist"><div class="mopt on" onclick="selModel(this,'gpt-4o')"><div class="mradio"></div><span class="mname">GPT-4o</span><span class="mtag">recommended</span></div></div></div>
+    <div class="ppanel" id="pp-gemini"><div class="fl"><div class="fl-lbl">API KEY</div><input type="password" id="k-gemini" placeholder="AIza…" oninput="checkKey()"></div><div class="mlist"><div class="mopt on" onclick="selModel(this,'gemini-2.0-flash')"><div class="mradio"></div><span class="mname">Gemini 2.0 Flash</span><span class="mtag">recommended</span></div></div></div>
+    <div class="ppanel" id="pp-groq"><div class="fl"><div class="fl-lbl">API KEY</div><input type="password" id="k-groq" placeholder="gsk_…" oninput="checkKey()"></div><div class="mlist"><div class="mopt on" onclick="selModel(this,'llama-3.3-70b-versatile')"><div class="mradio"></div><span class="mname">Llama 3.3 70B</span><span class="mtag">recommended</span></div></div></div>
+    <div class="key-status"><div class="kdot" id="kdot"></div><span id="kstatus">No key — narrative disabled</span></div>
+  </div>
+
+  <div class="sb-sec" style="margin-top:auto">
+    <div style="font-size:10px;color:var(--ink4);line-height:1.7"><strong style="color:var(--ink3)">Runway Model</strong> by Aonami Labs<br>MIT · No backend · Fully in-browser<br>Numbers never leave your tab.</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="ph">
+    <div class="eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Financial Operations
+    </div>
+    <div class="pt">Know exactly how long your <em>runway</em> is.</div>
+    <div class="ps">Enter monthly revenue, expenses, and cash — get burn rate, runway in months, a break-even timeline, three forward scenarios, and a 12-month projection. Enter numbers on the left to see results update live.</div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpi-strip">
+    <div class="kpi-card"><div class="kpi-lbl">Net Burn/Month</div><div class="kpi-val c-ink" id="k-burn">—</div><div class="kpi-sub" id="k-burn-sub">revenue - expenses</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Runway</div><div class="kpi-val c-ink" id="k-runway">—</div><div class="kpi-sub" id="k-runway-sub">at current burn</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Break-even</div><div class="kpi-val c-ink" id="k-breakeven">—</div><div class="kpi-sub" id="k-be-sub">revenue = expenses</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">Default Date</div><div class="kpi-val c-ink" id="k-default">—</div><div class="kpi-sub" id="k-default-sub">cash hits zero</div></div>
+  </div>
+
+  <!-- Runway bar -->
+  <div class="runway-bar-wrap" id="runway-bar-wrap">
+    <div class="rb-head">
+      <span class="rb-title">Cash Runway</span>
+      <span class="rb-expires" id="rb-expires"></span>
+    </div>
+    <div class="rb-track"><div class="rb-fill" id="rb-fill" style="width:0%;background:var(--green)"></div></div>
+    <div class="rb-labels"><span>Now</span><span id="rb-end-label"></span></div>
+    <div class="rb-markers" id="rb-markers"></div>
+  </div>
+
+  <!-- Scenarios -->
+  <div class="scenarios" id="scenarios">
+    <div class="scenario-card">
+      <div class="sc-label base">Base case</div>
+      <div class="sc-runway" id="s-base">—</div>
+      <div class="sc-desc" id="s-base-d">Current trajectory</div>
+      <div class="sc-detail" id="s-base-det"></div>
+    </div>
+    <div class="scenario-card" style="border-color:var(--green-line);background:var(--green-bg)">
+      <div class="sc-label opt">Optimistic +20%</div>
+      <div class="sc-runway c-green" id="s-opt">—</div>
+      <div class="sc-desc" id="s-opt-d">Revenue up 20%</div>
+      <div class="sc-detail" id="s-opt-det"></div>
+    </div>
+    <div class="scenario-card" style="border-color:var(--amber-line);background:var(--amber-bg)">
+      <div class="sc-label cons">Conservative −20%</div>
+      <div class="sc-runway c-amber" id="s-cons">—</div>
+      <div class="sc-desc" id="s-cons-d">Revenue down 20%</div>
+      <div class="sc-detail" id="s-cons-det"></div>
+    </div>
+  </div>
+
+  <!-- Projection table -->
+  <div class="proj-card">
+    <div class="proj-head">
+      <span>12-Month Projection</span>
+      <span style="font-size:11px;font-weight:400;color:var(--ink3);font-family:'JetBrains Mono',monospace" id="proj-growth-lbl"></span>
+    </div>
+    <div class="proj-scroll">
+      <table class="proj-tbl">
+        <thead><tr><th>Month</th><th>Revenue</th><th>Expenses</th><th>Net Burn</th><th>Cash Balance</th></tr></thead>
+        <tbody id="proj-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI -->
+  <div class="ai-section">
+    <div class="ai-head">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span class="ai-title">Board Narrative</span>
+      <span class="ai-byok">BYOK</span>
+    </div>
+    <div class="ai-body">
+      <div id="ai-no-key" class="ai-no-key">Add an API key in the sidebar to generate a board-ready financial narrative — a concise paragraph summarizing runway, trajectory, and the key levers to extend it.</div>
+      <div id="ai-btn-wrap" style="display:none">
+        <button class="run-btn blue" id="ai-btn" onclick="runAI()">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Generate board narrative →
+        </button>
+      </div>
+      <div class="ai-result" id="ai-result"></div>
+      <div class="ai-meta" id="ai-meta"></div>
+    </div>
+  </div>
+</main>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+// ══ STATE ══════════════════════════════════════════
+let provider='anthropic',model='claude-sonnet-4-6';
+let sym='₹',currCode='INR';
+let lastData = null;
+
+// ══ CURRENCY ═══════════════════════════════════════
+function setCurrency(s,code,btn){
+  sym=s;currCode=code;
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.inp-pre').forEach(el=>el.textContent=s);
+  compute();
+}
+
+// ══ PROVIDER ═══════════════════════════════════════
+function switchP(id,btn){
+  provider=id;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.ppanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pp-'+id).classList.add('on');
+  const defs={anthropic:'claude-sonnet-4-6',openai:'gpt-4o',gemini:'gemini-2.0-flash',groq:'llama-3.3-70b-versatile'};
+  model=defs[id];
+  document.querySelectorAll('#pp-'+id+' .mopt').forEach((o,i)=>o.classList.toggle('on',i===0));
+  checkKey();
+}
+function selModel(el,m){model=m;el.closest('.mlist').querySelectorAll('.mopt').forEach(o=>o.classList.remove('on'));el.classList.add('on');}
+function getKey(){return(document.getElementById('k-'+provider)||{value:''}).value.trim();}
+function checkKey(){
+  const ok=!!getKey();
+  document.getElementById('kdot').className='kdot'+(ok?' ok':'');
+  document.getElementById('kstatus').textContent=ok?provider+' · '+model:'No key — narrative disabled';
+  document.getElementById('ai-btn-wrap').style.display=ok?'block':'none';
+  document.getElementById('ai-no-key').style.display=ok?'none':'block';
+}
+
+// ══ FORMATTING ═════════════════════════════════════
+function fmt(n,abbrev=true){
+  if(abbrev){
+    if(Math.abs(n)>=10000000)return sym+(n/10000000).toFixed(1)+'Cr';
+    if(Math.abs(n)>=100000)return sym+(n/100000).toFixed(1)+'L';
+    if(Math.abs(n)>=1000)return sym+(n/1000).toFixed(0)+'K';
+  }
+  return sym+n.toLocaleString('en-IN',{maximumFractionDigits:0});
+}
+function fmtMonth(d){return d.toLocaleString('en-US',{month:'short',year:'2-digit'});}
+
+// ══ ENGINE ════════════════════════════════════════
+function compute(){
+  const cash=parseFloat(document.getElementById('cash').value)||0;
+  const rev=parseFloat(document.getElementById('revenue').value)||0;
+  const exp=parseFloat(document.getElementById('expenses').value)||0;
+  const growthPct=parseFloat(document.getElementById('growth').value)||0;
+  const growth=growthPct/100;
+
+  if(!cash&&!rev&&!exp){resetDisplay();return;}
+
+  const netBurn=exp-rev;
+  const isGrowing=growth>0;
+  const runway=netBurn>0?Math.floor(cash/netBurn):999;
+
+  // Break-even: when will revenue >= expenses?
+  // rev * (1+g)^n = exp  =>  n = log(exp/rev)/log(1+g)
+  let breakEvenMonths=null;
+  if(rev>0&&growth>0&&rev<exp){
+    breakEvenMonths=Math.ceil(Math.log(exp/rev)/Math.log(1+growth));
+  } else if(rev>=exp&&netBurn<=0){
+    breakEvenMonths=0;
+  }
+
+  // Default date
+  const now=new Date();
+  const defaultDate=netBurn>0?new Date(now.getTime()+runway*30*24*3600*1000):null;
+
+  lastData={cash,rev,exp,growth,growthPct,netBurn,runway,breakEvenMonths,defaultDate};
+
+  // ── KPIs ──
+  const burnEl=document.getElementById('k-burn');
+  burnEl.textContent=netBurn>0?fmt(netBurn):(netBurn<0?'+'+fmt(-netBurn):'0');
+  burnEl.className='kpi-val '+(netBurn>0?'c-red':netBurn<0?'c-green':'c-ink');
+  document.getElementById('k-burn-sub').textContent=netBurn>0?'per month (cash out)':'per month (cash positive)';
+
+  const rwEl=document.getElementById('k-runway');
+  if(netBurn<=0){rwEl.textContent='∞';rwEl.className='kpi-val c-green';}
+  else{rwEl.textContent=runway+'mo';rwEl.className='kpi-val '+(runway<=6?'c-red':runway<=12?'c-amber':'c-green');}
+  document.getElementById('k-runway-sub').textContent=netBurn<=0?'cash positive — no runway concern':'months of cash remaining';
+
+  const beEl=document.getElementById('k-breakeven');
+  if(breakEvenMonths===null){beEl.textContent='N/A';beEl.className='kpi-val c-ink';document.getElementById('k-be-sub').textContent=growth===0?'set a growth rate to see this':'already profitable';}
+  else if(breakEvenMonths===0){beEl.textContent='Now';beEl.className='kpi-val c-green';document.getElementById('k-be-sub').textContent='already at break-even';}
+  else{beEl.textContent=breakEvenMonths+'mo';beEl.className='kpi-val '+(breakEvenMonths<=runway?'c-green':'c-red');document.getElementById('k-be-sub').textContent=breakEvenMonths<=runway?'before cash runs out':'after current cash runs out';}
+
+  const defEl=document.getElementById('k-default');
+  if(netBurn<=0){defEl.textContent='None';defEl.className='kpi-val c-green';document.getElementById('k-default-sub').textContent='you\'re cash flow positive';}
+  else{defEl.textContent=fmtMonth(defaultDate);defEl.className='kpi-val '+(runway<=6?'c-red':runway<=12?'c-amber':'c-ink');document.getElementById('k-default-sub').textContent='if burn rate holds';}
+
+  // ── Runway bar ──
+  const maxMonths=Math.min(36,Math.max(runway,18));
+  const pct=Math.min(100,(runway/maxMonths)*100);
+  const fill=document.getElementById('rb-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=runway<=6?'var(--red)':runway<=12?'var(--amber)':'var(--green)';
+  document.getElementById('rb-expires').textContent=netBurn>0?`Expires ${fmtMonth(defaultDate)}`:'Cash flow positive';
+  document.getElementById('rb-end-label').textContent=maxMonths+'mo';
+  const markers=[];
+  if(breakEvenMonths&&breakEvenMonths<=maxMonths)markers.push(`<div class="rb-marker"><div class="rb-dot" style="background:var(--green)"></div><span>Break-even ${fmtMonth(new Date(now.getTime()+breakEvenMonths*30*24*3600*1000))}</span></div>`);
+  if(netBurn>0)markers.push(`<div class="rb-marker"><div class="rb-dot" style="background:var(--red)"></div><span>Default ${fmtMonth(defaultDate)}</span></div>`);
+  document.getElementById('rb-markers').innerHTML=markers.join('');
+
+  // ── Scenarios ──
+  function scenarioRunway(adjRev,adjExp){
+    const nb=adjExp-adjRev;
+    if(nb<=0)return{months:999,label:'∞',ok:true};
+    const m=Math.floor(cash/nb);
+    return{months:m,label:m+'mo',ok:m>runway};
+  }
+  const base=scenarioRunway(rev,exp);
+  const opt=scenarioRunway(rev*1.2,exp);
+  const cons=scenarioRunway(rev*0.8,exp);
+
+  document.getElementById('s-base').textContent=netBurn<=0?'∞':runway+'mo';
+  document.getElementById('s-base-det').textContent=`Burn: ${fmt(netBurn>0?netBurn:-netBurn)}/mo • Rev: ${fmt(rev)} • Exp: ${fmt(exp)}`;
+  document.getElementById('s-opt').textContent=opt.label;
+  document.getElementById('s-opt-det').textContent=`Revenue: ${fmt(rev*1.2)} (+20%) • Burn: ${fmt(Math.max(0,exp-rev*1.2))}/mo`;
+  document.getElementById('s-cons').textContent=cons.label;
+  document.getElementById('s-cons-det').textContent=`Revenue: ${fmt(rev*0.8)} (−20%) • Burn: ${fmt(Math.max(0,exp-rev*0.8))}/mo`;
+
+  // ── Projection table ──
+  const tbody=document.getElementById('proj-tbody');
+  const rows=[];
+  let cashBal=cash;
+  const beMonth=breakEvenMonths;
+  const defaultMonth=netBurn>0?runway:999;
+  document.getElementById('proj-growth-lbl').textContent=growth>0?`${growthPct}% MoM revenue growth`:'No revenue growth modelled';
+
+  for(let i=1;i<=12;i++){
+    const projRev=rev>0?rev*Math.pow(1+growth,i):0;
+    const projExp=exp;
+    const projBurn=projExp-projRev;
+    cashBal-=projBurn;
+    const d=new Date(now);
+    d.setMonth(d.getMonth()+i);
+    const isBE=beMonth&&i===beMonth;
+    const isZero=cashBal<=0&&cashBal+projBurn>0;
+    const cls=isBE?' class="be-row"':isZero?' class="zero-row"':i===1?' class="current-row"':'';
+    const cashCls=cashBal<0?'val-neg':cashBal<cash*0.25?'val-warn':'val-pos';
+    rows.push(`<tr${cls}>
+      <td>${fmtMonth(d)}${isBE?' 🎯':isZero?' ⚠':''}${i===1?' (next)':''}</td>
+      <td>${fmt(projRev)}</td>
+      <td>${fmt(projExp)}</td>
+      <td class="${projBurn>0?'val-neg':'val-pos'}">${projBurn>0?'-'+fmt(projBurn):'+'+fmt(-projBurn)}</td>
+      <td class="${cashCls}">${fmt(cashBal)}</td>
+    </tr>`);
+    if(cashBal<=-cashBal*10)break;
+  }
+  tbody.innerHTML=rows.join('');
+
+  // Reset AI
+  document.getElementById('ai-result').classList.remove('visible');
+  document.getElementById('ai-result').textContent='';
+  document.getElementById('ai-meta').style.display='none';
+  if(getKey()){document.getElementById('ai-btn').disabled=false;document.getElementById('ai-btn').innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate board narrative →`;}
+}
+
+function resetDisplay(){
+  ['k-burn','k-runway','k-breakeven','k-default'].forEach(id=>{ const el=document.getElementById(id); el.textContent='—'; el.className='kpi-val c-ink'; });
+}
+
+// ══ AI ════════════════════════════════════════════
+async function runAI(){
+  if(!lastData)return;
+  const key=getKey();
+  if(!key){toast('Add an API key in the sidebar.','err');return;}
+  const btn=document.getElementById('ai-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin">↻</span> Generating…';
+  const d=lastData;
+  const prompt=`You are a startup CFO preparing a board update.
+
+Financial snapshot (${currCode}):
+- Cash balance: ${sym}${d.cash.toLocaleString()}
+- Monthly revenue: ${sym}${d.rev.toLocaleString()}
+- Monthly expenses: ${sym}${d.exp.toLocaleString()}
+- Net burn rate: ${sym}${d.netBurn.toLocaleString()}/month
+- Runway: ${d.netBurn>0?d.runway+' months':'cash flow positive'}
+- Break-even: ${d.breakEvenMonths!==null?d.breakEvenMonths+' months':d.growth>0?'beyond projection':'no growth rate set'}
+- MoM revenue growth rate: ${(d.growthPct||0)}%
+
+Write a 3-paragraph board-ready financial narrative:
+1. Current financial position — state the facts directly (burn, runway, trajectory).
+2. Path to sustainability — what the growth rate implies for break-even and default date.
+3. Key levers — the 2-3 most actionable moves to extend runway or reach break-even sooner (specific, based on the numbers above).
+
+Write in professional, direct language. No jargon, no fluff. Under 200 words.`;
+  try{
+    const text=await callAI(prompt,key);
+    document.getElementById('ai-result').textContent=text;
+    document.getElementById('ai-result').classList.add('visible');
+    document.getElementById('ai-meta').textContent=`Generated by ${provider} · ${model} · No financial data sent beyond what you entered`;
+    document.getElementById('ai-meta').style.display='block';
+    btn.textContent='✓ Narrative ready';
+  }catch(e){toast('AI error: '+e.message,'err');btn.disabled=false;btn.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate board narrative →`;}
+}
+
+async function callAI(prompt,key){
+  if(provider==='anthropic'){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:800,messages:[{role:'user',content:prompt}]})});if(!r.ok)throw new Error(await r.text());return(await r.json()).content[0].text;}
+  if(provider==='openai'||provider==='groq'){const base=provider==='groq'?'https://api.groq.com/openai':'https://api.openai.com';const r=await fetch(base+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,max_tokens:800,messages:[{role:'user',content:prompt}]})});if(!r.ok)throw new Error(await r.text());return(await r.json()).choices[0].message.content;}
+  if(provider==='gemini'){const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});if(!r.ok)throw new Error(await r.text());return(await r.json()).candidates[0].content.parts[0].text;}
+  throw new Error('Unknown provider');
+}
+
+function toast(msg,type='ok'){const s=document.getElementById('toast-stack');const t=document.createElement('div');t.className='toast toast-'+type;t.textContent=msg;s.appendChild(t);setTimeout(()=>t.remove(),3000);}
+checkKey();
+// Demo values
+document.getElementById('cash').value='5000000';
+document.getElementById('revenue').value='800000';
+document.getElementById('expenses').value='1200000';
+document.getElementById('growth').value='8';
+compute();
+</script>
+</body>
+</html>
